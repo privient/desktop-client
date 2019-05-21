@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { IPCRouter } from '../../services/IPCRouter';
+import { IpcService } from '../../ipc.service';
+import { IpcMessageEvent } from 'electron';
 
 @Component({
   selector: 'app-home',
@@ -7,10 +8,24 @@ import { IPCRouter } from '../../services/IPCRouter';
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {
-  IPCRouter: IPCRouter;
+  messages = {};
+  
+  constructor(private readonly _ipc: IpcService, private cdr: ChangeDetectorRef) { 
+    _ipc.on('data', (event: IpcMessageEvent, arg: any) => {
+      console.log(arg);
+      this.messages['data'] = arg;
+      cdr.detectChanges();
+    });
 
-  constructor(private ipcRouter: IPCRouter) { 
-    this.IPCRouter = ipcRouter;
+    _ipc.on('socketstatus', (event: IpcMessageEvent, arg: any) => {
+      this.messages['socketstatus'] = arg;
+      console.log(arg);
+      cdr.detectChanges();
+    });
+
+    _ipc.on('updatedata', (event: IpcMessageEvent, arg: any) => {
+
+    });
   }
 
   ngOnInit() { }

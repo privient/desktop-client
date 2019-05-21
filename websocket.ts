@@ -1,4 +1,5 @@
 import { BrowserWindow } from "electron";
+import { Storage } from "./storage";
 import * as WebSocket from 'ws';
 
 const IPCEvent = {
@@ -22,16 +23,52 @@ export class WebsocketService {
             var ip = req.connection.remoteAddress;
             if (ip !== "::1") return;
 
-            ws.send('Connected Successfully');
             this.window.webContents.send('socketstatus', 'Connected');
+            var readyState = {
+                route: 'SocketReady',
+                message: 'Ready!'
+            }
+            ws.send(JSON.stringify(readyState));
 
             ws.on('message', (message) => {
                 try {
                     var result = JSON.parse(message);
+
+                    if (result.route == "GetData") {
+                        GetData(result.data).then(
+                            (result) => {
+                                var jsonResult = JSON.stringify(result);
+                                ws.send(jsonResult);
+                            },
+                            (error) => {
+                                var jsonResult = JSON.stringify(error);
+                                ws.send(jsonResult);
+                            }
+                        )
+                        return;
+                    }
+
+                    if (result.route == "SetData") {
+                        if (result.update) {
+                            SetData(result.data);
+                            console.log(result.data);
+                        } else {
+                            SetData(result.data).then(
+                                (res) => {
+                                    var jsonResult = JSON.stringify(res);
+                                    ws.send(jsonResult);
+                                }
+                            );
+                        }
+
+                        
+                        return;
+                    }
+
                     this.window.webContents.send(result.route, result.data);
                 } catch(err) {
                     console.log('Failed to parse JSON data.');
-                    ws.send('Failed to parse JSON data.');
+                    // ws.send('Failed to parse JSON data.');
                 }
             });
 
@@ -40,44 +77,76 @@ export class WebsocketService {
             });
         });
     }
+}
 
-    /*
-    OnConnection(ws, req) {
-        // Only allow localhost connections.
-       
-
+function SetData(msg: any) {
+    return new Promise((resolve, reject) => {
+        var result = Storage.SetData(msg.appname, msg.data);
         
-        //this.IPCSend(IPCEvent.DATA, 'IPC Connected');
-
-        ws.on('message', function incoming(message) {
-            this.OnMessage(message);
-        });
-        ws.on('close', this.OnClose);
-    }
-
-    IPCSend(ipcRoute, message) {
-        this.window.webContents.send(ipcRoute, message);
-    }
-
-    OnMessage(message) {
-        try {
-            var jsonObject = JSON.parse(message);
-            console.log(jsonObject);
-            this.IPCSend('data', message);
-            //this.IPCSend('data', message);
-        } catch(err) {
-            console.log('Failed to parse data.');
-            console.log(err);
+        var obj = {
+            route: 'ExistingData',
+            data: {
+                appname: msg.appname,
+                data: msg.data
+            }
         }
-    }
+        
+        return resolve(obj);
+    });
+}
 
-    OnClose() {
-        console.log('Disconnected');
-    }
-    */
+async function GetData(msg) {
+    return new Promise((resolve, reject) => {
+        console.log(msg);
+        Storage.GetData(msg.appname).then(
+            (result) => {
+                var obj = {
+                    route: 'ExistingData',
+                    data: {
+                        appname: msg.appname,
+                        data: result,
+                    }
+                }
+                return resolve(obj);
+            }, 
+            (error) => {
+                var obj = {
+                    route: 'NewData',
+                    data: {
+                        message: 'Failed to retrieve.'
+                    } 
+                }
+                return reject(obj);
+            }
+        );
+    })
 }
 
 /* JSON Message Structure:
+    // Standard Messages:
+    {
+        route: 'WhereItGoes',
+        data: {
+            // All data
+        }
+    }
+
+    // Saving Data:
+    {
+        route: 'SetData',
+        data: {
+            appname: 'xyz',
+            block: {}
+        }
+    }
+
+    // Getting Data:
+    {
+        route: 'GetData',
+        data: {
+            appname: 'xyz'
+        }
+    }
 
 
 */

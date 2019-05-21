@@ -83,6 +83,9 @@
   },
   "dependencies": {
     "@types/jest": "^24.0.13",
+    "@types/node-persist": "0.0.33",
+    "data-store": "^3.1.0",
+    "node-persist": "^3.0.4",
     "ws": "^7.0.0"
   }
 }

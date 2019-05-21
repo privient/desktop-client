@@ -1,3 +1,8 @@
 <div class="container">
-  <p>Socket Status: {{ IPCRouter.messages.data.socketstatus }}</p>
+  <div *ngIf="messages.socketstatus != undefined">
+    <p>Socket Status: {{ messages.socketstatus }}</p>
+  </div>
+  <div *ngIf="messages.socketstatus == undefined">
+    <p>Socket Status: Disconnected</p>
+  </div>
 </div>
