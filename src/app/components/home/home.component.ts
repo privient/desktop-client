@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { IpcService } from '../../ipc.service';
+import { IPCRouter } from '../../services/IPCRouter';
 
 @Component({
   selector: 'app-home',
@@ -7,16 +7,11 @@ import { IpcService } from '../../ipc.service';
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {
+  IPCRouter: IPCRouter;
 
-  constructor(private _ipc: IpcService) { 
-    this.socketListener(_ipc);
+  constructor(private ipcRouter: IPCRouter) { 
+    this.IPCRouter = ipcRouter;
   }
 
   ngOnInit() { }
-
-  private socketListener(ipc: IpcService) {
-    ipc.on('data', (event: Electron.IpcMessageEvent, arg: any) => {
-      console.log(arg);
-    });
-  }
 }

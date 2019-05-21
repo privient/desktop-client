@@ -1,13 +1,15 @@
 import { app, BrowserWindow, screen, ipcMain } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
+import { WebsocketService } from './websocket';
+
+var SocketService: WebsocketService;
 
 let win, serve;
 const args = process.argv.slice(1);
 serve = args.some(val => val === '--serve');
 
 function createWindow() {
-
   const electronScreen = screen;
   const size = electronScreen.getPrimaryDisplay().workAreaSize;
 
@@ -15,8 +17,8 @@ function createWindow() {
   win = new BrowserWindow({
     x: 0,
     y: 0,
-    width: size.width,
-    height: size.height,
+    width: size.width / 2,
+    height: size.height / 2,
     webPreferences: {
       nodeIntegration: true,
     },
@@ -55,6 +57,7 @@ try {
   // initialization and is ready to create browser windows.
   // Some APIs can only be used after this event occurs.
   app.on('ready', createWindow);
+  app.on('ready', startSocketServer);
 
   // Quit when all windows are closed.
   app.on('window-all-closed', () => {
@@ -78,33 +81,11 @@ try {
   // throw e;
 }
 
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 5555 });
+function startSocketServer() {
+  console.log('Starting socket server...');
+  setTimeout(() => {
+    SocketService = new WebsocketService(5555, win);
+  }, 5000);
+}
 
-wss.on('connection', (ws, req) => {
-    var ip = req.connection.remoteAddress;
-    /*
-    console.info(ip);
 
-    if (ip !== "::1") {
-        return;
-    }
-
-    */
-    ws.send('Connected.');
-
-    win.webContents.send('data', 'connected');
-    
-    ws.on('message', function incoming(message) {
-        try {
-            var result = message;
-            win.webContents.send('data', result);
-        } catch(e) {
-            console.log(e);
-        }
-    });
-    
-    ws.on('close', () => {
-        console.log('Disconnected.');
-    });
-});
